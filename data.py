@@ -7,24 +7,27 @@ from tqdm import tqdm
 
 np.set_printoptions(precision=4)
 
-def dataset_limited(genres,limit=10,shuffle=True):
+def dataset_limited(genres,limit=10,shuffle=True,folder='wikiartimages/stylematricesminmax/'):
     np_arrs={s:[] for s in style_blocks}
     labels=[]
     for genre in genres:
-        mypath=os.path.join(os.getcwd(),'wikiartimages/stylematrices/'+genre)
+        mypath=os.path.join(os.getcwd(),folder+genre)
         files= [f for f in os.listdir(mypath) if f.endswith('.npz')]
         if shuffle is True:
             np.random.shuffle(files)
-        for file in tqdm(files[:limit]):
-            npz=np.load(os.path.join(mypath,file))
+        pbar=tqdm(files[:limit])
+        for file in pbar:
+            joined_path=os.path.join(mypath,file)
+            pbar.set_description(genre+'/'+file)
+            npz=np.load(joined_path)
             for k in npz.keys():
                 np_arrs[k].append(npz[k])
             labels.append(genre)
     matrices=tuple([np_arrs[s] for s in style_blocks])
     return tf.data.Dataset.from_tensor_slices((labels,matrices))
 
-def dataset_batched(genres,limit=10,shuffle=True,batch_size=10):
-    d_set=dataset_limited(genres,limit=limit,shuffle=shuffle)
+def dataset_batched(genres,limit=10,shuffle=True,batch_size=10,folder='wikiartimages/stylematricesminmax/'):
+    d_set=dataset_limited(genres,limit=limit,shuffle=shuffle,folder=folder)
     genre_lookup={}
     for g in range(len(genres)):
         genre_lookup[genres[g]]=[0 for _ in range(len(genres))]
@@ -41,11 +44,11 @@ def dataset_batched(genres,limit=10,shuffle=True,batch_size=10):
     mats_data=[tf.data.Dataset.from_tensor_slices(m).batch(batch_size) for m in mats]
     return label_data,mats_data
 
-def dataset_all(genres,shuffle=True):
+def dataset_all(genres,shuffle=True,folder='wikiartimages/stylematrices/'):
     np_arrs={s:[] for s in style_blocks}
     labels=[]
     for genre in genres:
-        mypath=os.path.join(os.getcwd(),'wikiartimages/stylematrices/'+genre)
+        mypath=os.path.join(os.getcwd(),folder+genre)
         files= [f for f in os.listdir(mypath) if f.endswith('.npz')]
         if shuffle is True:
             np.random.shuffle(files)
